@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Rotavio Marketplace</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--tg-theme-bg-color, #ffffff);
+            color: var(--tg-theme-text-color, #000000);
+            padding: 16px;
+            padding-bottom: 80px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 12px 0;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--tg-theme-button-color, #4CAF50);
+        }
+        .balance {
+            background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .search-bar {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid var(--tg-theme-button-color, #4CAF50);
+            border-radius: 12px;
+            font-size: 16px;
+            background: var(--tg-theme-bg-color, #ffffff);
+            color: var(--tg-theme-text-color, #000000);
+            margin-bottom: 16px;
+            outline: none;
+        }
+        .categories {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .category-item {
+            background: var(--tg-theme-secondary-bg-color, #f5f5f5);
+            padding: 12px 8px;
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.2s;
+            border: none;
+            color: var(--tg-theme-text-color, #000000);
+            font-size: 14px;
+        }
+        .category-item:active { transform: scale(0.95); }
+        .category-item .emoji { font-size: 28px; display: block; margin-bottom: 4px; }
+        
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+        .product-card {
+            background: var(--tg-theme-secondary-bg-color, #f5f5f5);
+            border-radius: 12px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .product-card:active { transform: scale(0.97); }
+        .product-image {
+            width: 100%;
+            height: 150px;
+            background: #e0e0e0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            color: #999;
+        }
+        .product-info { padding: 12px; }
+        .product-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 4px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .product-price {
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--tg-theme-button-color, #4CAF50);
+        }
+        
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--tg-theme-secondary-bg-color, #f5f5f5);
+            display: flex;
+            justify-content: space-around;
+            padding: 8px 0;
+            border-top: 1px solid var(--tg-theme-hint-color, #ddd);
+        }
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border: none;
+            background: none;
+            color: var(--tg-theme-hint-color, #999);
+            font-size: 12px;
+            cursor: pointer;
+            padding: 4px 16px;
+        }
+        .nav-item.active { color: var(--tg-theme-button-color, #4CAF50); }
+        .nav-item .icon { font-size: 24px; margin-bottom: 2px; }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--tg-theme-bg-color, #ffffff);
+            z-index: 1000;
+            overflow-y: auto;
+            padding: 16px;
+            padding-bottom: 80px;
+        }
+        .modal.active { display: block; }
+        .modal-back {
+            font-size: 24px;
+            cursor: pointer;
+            margin-bottom: 16px;
+            border: none;
+            background: none;
+            color: var(--tg-theme-text-color, #000000);
+        }
+        .modal-image {
+            width: 100%;
+            height: 280px;
+            background: #e0e0e0;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 64px;
+            margin-bottom: 16px;
+        }
+        .modal-title { font-size: 22px; font-weight: bold; margin-bottom: 8px; }
+        .modal-price {
+            font-size: 28px;
+            font-weight: bold;
+            color: var(--tg-theme-button-color, #4CAF50);
+            margin-bottom: 12px;
+        }
+        .modal-description {
+            margin-bottom: 16px;
+            line-height: 1.6;
+            color: var(--tg-theme-text-color, #333);
+        }
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .btn {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            min-width: 120px;
+        }
+        .btn:active { opacity: 0.8; }
+        .btn-primary {
+            background: var(--tg-theme-button-color, #4CAF50);
+            color: var(--tg-theme-button-text-color, #ffffff);
+        }
+        .btn-secondary {
+            background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+            color: var(--tg-theme-text-color, #000000);
+        }
+        
+        .loading { text-align: center; padding: 40px; color: var(--tg-theme-hint-color, #999); }
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--tg-theme-hint-color, #999);
+        }
+        .empty-state .icon { font-size: 64px; display: block; margin-bottom: 16px; }
+        
+        @media (max-width: 480px) {
+            .products-grid { grid-template-columns: 1fr 1fr; }
+            .categories { grid-template-columns: repeat(3, 1fr); }
+        }
+    </style>
+</head>
+<body>
+    <div id="main">
+        <div class="header">
+            <div class="logo">🛍️ Rotavio</div>
+            <div class="balance" id="balanceDisplay">💰 0 ₽</div>
+        </div>
+        
+        <input type="text" class="search-bar" id="searchInput" placeholder="🔍 Поиск товаров...">
+        
+        <div class="categories" id="categoriesContainer"></div>
+        
+        <div id="productsContainer">
+            <div class="loading">Загрузка товаров...</div>
+        </div>
+    </div>
+    
+    <div class="modal" id="productModal">
+        <button class="modal-back" onclick="closeModal()">← Назад</button>
+        <div class="modal-image" id="modalImage">📦</div>
+        <div class="modal-title" id="modalTitle">Название</div>
+        <div class="modal-price" id="modalPrice">0 ₽</div>
+        <div class="modal-description" id="modalDescription">Описание</div>
+        <div class="modal-actions">
+            <button class="btn btn-primary" onclick="buyProduct()">🛒 Купить</button>
+            <button class="btn btn-secondary" id="modalFavoriteBtn" onclick="toggleFavorite()">🤍</button>
+            <button class="btn btn-secondary" id="modalCartBtn" onclick="addToCart()">🛍️ В корзину</button>
+        </div>
+        <div style="margin-top: 12px; text-align: center; color: var(--tg-theme-hint-color, #999); font-size: 13px;">
+            <span id="modalSeller">Продавец: неизвестен</span>
+        </div>
+    </div>
+    
+    <div class="bottom-nav">
+        <button class="nav-item active" onclick="navigateTo('catalog')">
+            <span class="icon">🛍️</span> Каталог
+        </button>
+        <button class="nav-item" onclick="navigateTo('favorites')">
+            <span class="icon">⭐</span> Избранное
+        </button>
+        <button class="nav-item" onclick="navigateTo('cart')">
+            <span class="icon">🛒</span> Корзина
+        </button>
+        <button class="nav-item" onclick="navigateTo('profile')">
+            <span class="icon">👤</span> Профиль
+        </button>
+    </div>
+    
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        tg.ready();
+        
+        let userData = { id: tg.initDataUnsafe?.user?.id || 0, balance: 0, favorites: [], cart: {} };
+        let currentProduct = null;
+        let products = [];
+        
+        function init() {
+            loadCategories();
+            loadProducts();
+            document.getElementById('searchInput').addEventListener('input', function(e) {
+                const query = e.target.value.toLowerCase();
+                const filtered = products.filter(p => 
+                    p.title.toLowerCase().includes(query) || 
+                    p.description.toLowerCase().includes(query)
+                );
+                renderProducts(filtered);
+            });
+        }
+        
+        function loadCategories() {
+            const categories = [
+                { id: 'electronics', name: '📱 Электроника' },
+                { id: 'clothing', name: '👕 Одежда' },
+                { id: 'home', name: '🏠 Дом' },
+                { id: 'auto', name: '🚗 Авто' },
+                { id: 'books', name: '📚 Книги' },
+                { id: 'games', name: '🎮 Игры' }
+            ];
+            
+            const container = document.getElementById('categoriesContainer');
+            container.innerHTML = categories.map(cat => `
+                <button class="category-item" onclick="filterByCategory('${cat.id}')">
+                    <span class="emoji">${cat.name.split(' ')[0]}</span>
+                    ${cat.name.split(' ').slice(1).join(' ')}
+                </button>
+            `).join('');
+        }
+        
+        function loadProducts() {
+            // Демо-данные
+            products = [
+                {
+                    id: 1,
+                    title: 'iPhone 12 Pro 256GB',
+                    price: 45000,
+                    description: 'Отличное состояние, был в чехле с первого дня',
+                    category: 'electronics',
+                    photos: [],
+                    characteristics: { 'Состояние': 'Отличное', 'Год': '2023' },
+                    seller: 'Алексей',
+                    rating: 4.8
+                },
+                {
+                    id: 2,
+                    title: 'MacBook Pro 14" M1 Pro',
+                    price: 120000,
+                    description: 'Ноутбук в идеальном состоянии',
+                    category: 'electronics',
+                    photos: [],
+                    characteristics: { 'Состояние': 'Идеальное', 'Год': '2024' },
+                    seller: 'Мария',
+                    rating: 4.9
+                },
+                {
+                    id: 3,
+                    title: 'Sony PlayStation 5',
+                    price: 35000,
+                    description: 'PS5 с двумя геймпадами',
+                    category: 'games',
+                    photos: [],
+                    characteristics: { 'Состояние': 'Отличное', 'Год': '2023' },
+                    seller: 'Дмитрий',
+                    rating: 4.7
+                }
+            ];
+            renderProducts(products);
+        }
+        
+        function renderProducts(productsList) {
+            const container = document.getElementById('productsContainer');
+            if (!productsList || productsList.length === 0) {
+                container.innerHTML = `<div class="empty-state"><span class="icon">📭</span>Товаров пока нет</div>`;
+                return;
+            }
+            container.innerHTML = `
+                <div class="products-grid">
+                    ${productsList.map(p => `
+                        <div class="product-card" onclick="openProduct(${p.id})">
+                            <div class="product-image">📦</div>
+                            <div class="product-info">
+                                <div class="product-title">${p.title}</div>
+                                <div class="product-price">${p.price} ₽</div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+        
+        function filterByCategory(categoryId) {
+            const filtered = products.filter(p => p.category === categoryId);
+            renderProducts(filtered);
+        }
+        
+        function openProduct(productId) {
+            const product = products.find(p => p.id === productId);
+            if (!product) return;
+            currentProduct = product;
+            
+            document.getElementById('modalImage').textContent = '📦';
+            document.getElementById('modalTitle').textContent = product.title;
+            document.getElementById('modalPrice').textContent = `${product.price} ₽`;
+            document.getElementById('modalDescription').textContent = product.description || 'Описание отсутствует';
+            document.getElementById('modalSeller').textContent = `Продавец: ${product.seller || 'неизвестен'}`;
+            
+            document.getElementById('productModal').classList.add('active');
+        }
+        
+        function closeModal() {
+            document.getElementById('productModal').classList.remove('active');
+        }
+        
+        function buyProduct() {
+            if (!currentProduct) return;
+            tg.sendData(JSON.stringify({
+                action: 'buy',
+                product_id: currentProduct.id
+            }));
+            tg.showAlert(`Товар "${currentProduct.title}" добавлен в корзину`);
+        }
+        
+        function toggleFavorite() {
+            if (!currentProduct) return;
+            const btn = document.getElementById('modalFavoriteBtn');
+            const isFavorite = btn.textContent === '❤️';
+            btn.textContent = isFavorite ? '🤍' : '❤️';
+            tg.showAlert(isFavorite ? 'Удалено из избранного' : 'Добавлено в избранное');
+        }
+        
+        function addToCart() {
+            if (!currentProduct) return;
+            const btn = document.getElementById('modalCartBtn');
+            const inCart = btn.textContent === '❌ Из корзины';
+            btn.textContent = inCart ? '🛍️ В корзину' : '❌ Из корзины';
+            tg.showAlert(inCart ? 'Удалено из корзины' : 'Добавлено в корзину');
+        }
+        
+        function navigateTo(view) {
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-item')[['catalog','favorites','cart','profile'].indexOf(view)].classList.add('active');
+            
+            if (view === 'catalog') {
+                renderProducts(products);
+            } else if (view === 'favorites') {
+                const favProducts = products.filter(p => userData.favorites.includes(p.id));
+                renderProducts(favProducts);
+            } else if (view === 'cart') {
+                const cartProducts = products.filter(p => userData.cart[p.id]);
+                renderProducts(cartProducts);
+            } else if (view === 'profile') {
+                const container = document.getElementById('productsContainer');
+                container.innerHTML = `
+                    <div style="padding: 20px; text-align: center;">
+                        <div style="font-size: 64px; margin-bottom: 8px;">👤</div>
+                        <h2>${tg.initDataUnsafe?.user?.first_name || 'Пользователь'}</h2>
+                        <p>ID: ${userData.id}</p>
+                        <div style="background: var(--tg-theme-secondary-bg-color, #f5f5f5); padding: 16px; border-radius: 12px; margin: 16px 0;">
+                            <p>💰 Баланс: <strong>${userData.balance} ₽</strong></p>
+                            <p>⭐ Избранное: <strong>${userData.favorites.length}</strong></p>
+                            <p>🛒 В корзине: <strong>${Object.keys(userData.cart).length}</strong></p>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+        
+        init();
+    </script>
+</body>
+</html>
